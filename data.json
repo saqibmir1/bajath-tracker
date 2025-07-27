@@ -1,0 +1,32 @@
+{
+  "totalIncome": 18000,
+  "lastUpdated": "2025-07-27T07:24:47.011Z",
+  "categories": {
+    "needs": {
+      "total": 9000,
+      "spent": 4700,
+      "entries": [
+        {
+          "item": "rent",
+          "amount": 4500,
+          "date": "2025-07-27T07:21:04.906Z"
+        },
+        {
+          "item": "chicken",
+          "amount": 200,
+          "date": "2025-07-27T07:24:47.011Z"
+        }
+      ]
+    },
+    "wants": {
+      "total": 5400,
+      "spent": 0,
+      "entries": []
+    },
+    "savings": {
+      "total": 3600,
+      "saved": 0,
+      "entries": []
+    }
+  }
+}

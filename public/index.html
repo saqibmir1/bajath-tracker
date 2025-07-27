@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bajath Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 120px;
+            height: 120px;
+            margin: auto;
+        }
+        .chart-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .table-container {
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .summary-chart {
+                max-width: 140px;
+                height: 140px;
+            }
+            
+            .summary-chart .chart-label {
+                font-size: 0.9rem;
+            }
+            
+            input, button {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            .category-card {
+                min-height: auto;
+            }
+            
+            .compact-table {
+                font-size: 0.75rem;
+            }
+            
+            .compact-table th,
+            .compact-table td {
+                padding: 0.25rem !important;
+            }
+        }
+        
+        /* Desktop specific */
+        @media (min-width: 769px) {
+            .chart-container {
+                max-width: 200px;
+                height: 200px;
+            }
+            
+            .summary-chart {
+                max-width: 250px;
+                height: 250px;
+            }
+            
+            .chart-label {
+                font-size: 1rem;
+            }
+            
+            .summary-chart .chart-label {
+                font-size: 1.2rem;
+            }
+            
+            .table-container {
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Status Indicator -->
+    <div id="status-indicator" class="status-indicator"></div>
+
+    <div class="container mx-auto p-3 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-4">
+            <h1 class="text-2xl font-bold text-gray-900">Budget Tracker</h1>
+            <p id="last-updated" class="text-xs text-gray-500"></p>
+        </header>
+
+        <!-- Summary Section - Compact -->
+        <div class="bg-white rounded-lg shadow-md p-3 mb-4">
+            <div class="flex items-center justify-between">
+                <div class="summary-chart chart-container">
+                    <canvas id="combinedChart"></canvas>
+                    <div id="combinedChartLabel" class="chart-label"></div>
+                </div>
+                <div class="flex-1 ml-4 text-sm">
+                    <div class="grid grid-cols-1 gap-1">
+                        <p><strong>Income:</strong> <span id="totalIncome" class="text-green-600">₹18,000</span></p>
+                        <p><strong>Spent:</strong> <span id="totalSpent" class="text-red-600">₹0</span></p>
+                        <p><strong>Left:</strong> <span id="totalRemaining" class="text-blue-600">₹18,000</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            
+            <!-- Needs -->
+            <div class="bg-white rounded-lg shadow-md p-3 category-card">
+                <div class="text-center mb-3">
+                    <h3 class="text-lg font-bold text-blue-600">Needs</h3>
+                    <p class="text-xs text-gray-500">₹9,000 (50%)</p>
+                    <p class="text-sm"><span id="needsRemaining" class="font-semibold text-green-600">₹9,000</span> left</p>
+                </div>
+                
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="chart-container flex-shrink-0">
+                        <canvas id="needsChart"></canvas>
+                        <div id="needsChartLabel" class="chart-label"></div>
+                    </div>
+                    <form id="needs-form" class="flex-1 space-y-2">
+                        <input type="text" id="needs-item" placeholder="Item" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-blue-500" required>
+                        <input type="number" id="needs-cost" placeholder="₹" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-blue-500" required min="0" step="0.01">
+                        <button type="submit" class="w-full bg-blue-600 text-white font-medium py-2 px-3 rounded text-sm hover:bg-blue-700">Add</button>
+                    </form>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full text-left compact-table">
+                        <thead>
+                            <tr class="border-b text-xs">
+                                <th class="p-1">Item</th>
+                                <th class="p-1 text-right">₹</th>
+                            </tr>
+                        </thead>
+                        <tbody id="needs-table" class="text-xs">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Wants -->
+            <div class="bg-white rounded-lg shadow-md p-3 category-card">
+                <div class="text-center mb-3">
+                    <h3 class="text-lg font-bold text-orange-600">Wants</h3>
+                    <p class="text-xs text-gray-500">₹5,400 (30%)</p>
+                    <p class="text-sm"><span id="wantsRemaining" class="font-semibold text-green-600">₹5,400</span> left</p>
+                </div>
+                
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="chart-container flex-shrink-0">
+                        <canvas id="wantsChart"></canvas>
+                        <div id="wantsChartLabel" class="chart-label"></div>
+                    </div>
+                    <form id="wants-form" class="flex-1 space-y-2">
+                        <input type="text" id="wants-item" placeholder="Item" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-orange-500" required>
+                        <input type="number" id="wants-cost" placeholder="₹" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-orange-500" required min="0" step="0.01">
+                        <button type="submit" class="w-full bg-orange-500 text-white font-medium py-2 px-3 rounded text-sm hover:bg-orange-600">Add</button>
+                    </form>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full text-left compact-table">
+                        <thead>
+                            <tr class="border-b text-xs">
+                                <th class="p-1">Item</th>
+                                <th class="p-1 text-right">₹</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wants-table" class="text-xs">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Savings -->
+            <div class="bg-white rounded-lg shadow-md p-3 category-card">
+                <div class="text-center mb-3">
+                    <h3 class="text-lg font-bold text-green-600">Savings</h3>
+                    <p class="text-xs text-gray-500">₹3,600 (20%)</p>
+                    <p class="text-sm"><span id="savingsRemaining" class="font-semibold text-green-600">₹3,600</span> to save</p>
+                </div>
+                
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="chart-container flex-shrink-0">
+                        <canvas id="savingsChart"></canvas>
+                        <div id="savingsChartLabel" class="chart-label"></div>
+                    </div>
+                    <form id="savings-form" class="flex-1 space-y-2">
+                        <input type="text" id="savings-item" placeholder="Source" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-green-500" required>
+                        <input type="number" id="savings-amount" placeholder="₹" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-green-500" required min="0" step="0.01">
+                        <button type="submit" class="w-full bg-green-600 text-white font-medium py-2 px-3 rounded text-sm hover:bg-green-700">Add</button>
+                    </form>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full text-left compact-table">
+                        <thead>
+                            <tr class="border-b text-xs">
+                                <th class="p-1">Source</th>
+                                <th class="p-1 text-right">₹</th>
+                            </tr>
+                        </thead>
+                        <tbody id="savings-table" class="text-xs">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let budgetData = null;
+
+    // DOM Elements
+    const elements = {
+        totalIncome: document.getElementById('totalIncome'),
+        totalSpent: document.getElementById('totalSpent'),
+        totalRemaining: document.getElementById('totalRemaining'),
+        lastUpdated: document.getElementById('last-updated'),
+        statusIndicator: document.getElementById('status-indicator'),
+        needs: {
+            form: document.getElementById('needs-form'),
+            itemInput: document.getElementById('needs-item'),
+            costInput: document.getElementById('needs-cost'),
+            table: document.getElementById('needs-table'),
+            remaining: document.getElementById('needsRemaining'),
+            chartLabel: document.getElementById('needsChartLabel')
+        },
+        wants: {
+            form: document.getElementById('wants-form'),
+            itemInput: document.getElementById('wants-item'),
+            costInput: document.getElementById('wants-cost'),
+            table: document.getElementById('wants-table'),
+            remaining: document.getElementById('wantsRemaining'),
+            chartLabel: document.getElementById('wantsChartLabel')
+        },
+        savings: {
+            form: document.getElementById('savings-form'),
+            itemInput: document.getElementById('savings-item'),
+            amountInput: document.getElementById('savings-amount'),
+            table: document.getElementById('savings-table'),
+            remaining: document.getElementById('savingsRemaining'),
+            chartLabel: document.getElementById('savingsChartLabel')
+        },
+        combined: {
+            chartLabel: document.getElementById('combinedChartLabel')
+        }
+    };
+
+    // Chart instances
+    let charts = {};
+
+    // --- API Functions ---
+    async function fetchBudgetData() {
+        try {
+            showStatus('Loading...', 'info');
+            const response = await fetch('/api/budget');
+            if (!response.ok) throw new Error('Failed to fetch budget data');
+            budgetData = await response.json();
+            showStatus('Loaded', 'success');
+            return budgetData;
+        } catch (error) {
+            showStatus('Error!', 'error');
+            alert('Error loading budget data: ' + error.message);
+            throw error;
+        }
+    }
+
+    async function addEntry(category, item, amount) {
+        try {
+            showStatus('Saving...', 'info');
+            const response = await fetch(`/api/budget/${category}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ item, amount })
+            });
+            
+            if (!response.ok) throw new Error('Failed to save entry');
+            const result = await response.json();
+            budgetData = result.data;
+            showStatus('Saved!', 'success');
+            return result;
+        } catch (error) {
+            showStatus('Failed!', 'error');
+            alert('Error saving entry: ' + error.message);
+            throw error;
+        }
+    }
+
+    // --- UI Functions ---
+    function showStatus(message, type) {
+        const colors = {
+            info: 'bg-blue-500',
+            success: 'bg-green-500',
+            error: 'bg-red-500'
+        };
+        
+        elements.statusIndicator.innerHTML = `
+            <div class="px-3 py-1 rounded text-white text-xs ${colors[type]} shadow-lg">
+                ${message}
+            </div>
+        `;
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                elements.statusIndicator.innerHTML = '';
+            }, 1500);
+        }
+    }
+
+    // --- Chart Functions ---
+    function createDoughnutChart(ctx, data, options) {
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: options
+        });
+    }
+
+    function getChartConfig(spent, total, color, lightColor) {
+        const remaining = total - spent;
+        return {
+            datasets: [{
+                data: [spent, remaining > 0 ? remaining : 0],
+                backgroundColor: [color, lightColor],
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverBorderColor: '#ffffff'
+            }],
+            labels: ['Spent', 'Remaining']
+        };
+    }
+    
+    function getSavingsChartConfig(saved, total, color, lightColor) {
+        const remainingToSave = total - saved;
+        return {
+            datasets: [{
+                data: [saved, remainingToSave > 0 ? remainingToSave : 0],
+                backgroundColor: [color, lightColor],
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverBorderColor: '#ffffff'
+            }],
+            labels: ['Saved', 'Remaining to Save']
+        };
+    }
+
+    function getCombinedChartConfig() {
+        const totalSpent = budgetData.categories.needs.spent + budgetData.categories.wants.spent;
+        const totalSaved = budgetData.categories.savings.saved;
+        const totalRemaining = budgetData.totalIncome - totalSpent - totalSaved;
+
+        return {
+            datasets: [{
+                data: [
+                    budgetData.categories.needs.spent, 
+                    budgetData.categories.wants.spent, 
+                    totalSaved, 
+                    totalRemaining > 0 ? totalRemaining : 0
+                ],
+                backgroundColor: ['#3b82f6', '#f97316', '#22c55e', '#e5e7eb'],
+                borderColor: '#ffffff',
+                borderWidth: 2,
+            }],
+            labels: ['Needs', 'Wants', 'Saved', 'Free']
+        };
+    }
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+        }
+    };
+
+    // --- Update Functions ---
+    function updateUI() {
+        if (!budgetData) return;
+
+        // Update last updated
+        if (budgetData.lastUpdated) {
+            elements.lastUpdated.textContent = `Updated: ${new Date(budgetData.lastUpdated).toLocaleString()}`;
+        }
+
+        // Update Needs
+        const needsRemaining = budgetData.categories.needs.total - budgetData.categories.needs.spent;
+        elements.needs.remaining.textContent = `₹${needsRemaining.toFixed(0)}`;
+        charts.needs.data = getChartConfig(budgetData.categories.needs.spent, budgetData.categories.needs.total, '#3b82f6', '#bfdbfe');
+        elements.needs.chartLabel.innerHTML = `${((needsRemaining / budgetData.categories.needs.total) * 100).toFixed(0)}%<br><small>left</small>`;
+        charts.needs.update();
+
+        // Update Wants
+        const wantsRemaining = budgetData.categories.wants.total - budgetData.categories.wants.spent;
+        elements.wants.remaining.textContent = `₹${wantsRemaining.toFixed(0)}`;
+        charts.wants.data = getChartConfig(budgetData.categories.wants.spent, budgetData.categories.wants.total, '#f97316', '#fed7aa');
+        elements.wants.chartLabel.innerHTML = `${((wantsRemaining / budgetData.categories.wants.total) * 100).toFixed(0)}%<br><small>left</small>`;
+        charts.wants.update();
+        
+        // Update Savings
+        const savingsRemaining = budgetData.categories.savings.total - budgetData.categories.savings.saved;
+        elements.savings.remaining.textContent = `₹${savingsRemaining.toFixed(0)}`;
+        charts.savings.data = getSavingsChartConfig(budgetData.categories.savings.saved, budgetData.categories.savings.total, '#22c55e', '#bbf7d0');
+        elements.savings.chartLabel.innerHTML = `${((budgetData.categories.savings.saved / budgetData.categories.savings.total) * 100).toFixed(0)}%<br><small>saved</small>`;
+        charts.savings.update();
+
+        // Update Combined Summary
+        const totalSpent = budgetData.categories.needs.spent + budgetData.categories.wants.spent;
+        const totalRemaining = budgetData.totalIncome - totalSpent - budgetData.categories.savings.saved;
+        elements.totalIncome.textContent = `₹${budgetData.totalIncome.toFixed(0)}`;
+        elements.totalSpent.textContent = `₹${(totalSpent + budgetData.categories.savings.saved).toFixed(0)}`;
+        elements.totalRemaining.textContent = `₹${totalRemaining.toFixed(0)}`;
+        charts.combined.data = getCombinedChartConfig();
+        elements.combined.chartLabel.innerHTML = `${((totalRemaining / budgetData.totalIncome) * 100).toFixed(0)}%<br><small>free</small>`;
+        charts.combined.update();
+    }
+
+    function rebuildTables() {
+        if (!budgetData) return;
+
+        // Clear existing tables
+        elements.needs.table.innerHTML = '';
+        elements.wants.table.innerHTML = '';
+        elements.savings.table.innerHTML = '';
+        
+        // Rebuild needs entries (show only last 5)
+        const needsEntries = budgetData.categories.needs.entries.slice(-5);
+        needsEntries.forEach(entry => {
+            addEntryToTable(elements.needs.table, entry.item, entry.amount);
+        });
+        
+        // Rebuild wants entries (show only last 5)
+        const wantsEntries = budgetData.categories.wants.entries.slice(-5);
+        wantsEntries.forEach(entry => {
+            addEntryToTable(elements.wants.table, entry.item, entry.amount);
+        });
+        
+        // Rebuild savings entries (show only last 5)
+        const savingsEntries = budgetData.categories.savings.entries.slice(-5);
+        savingsEntries.forEach(entry => {
+            addEntryToTable(elements.savings.table, entry.item, entry.amount);
+        });
+    }
+
+    function addEntryToTable(table, item, cost) {
+        const row = document.createElement('tr');
+        row.className = 'border-b last:border-b-0';
+        
+        // Truncate long item names
+        const truncatedItem = item.length > 15 ? item.substring(0, 15) + '...' : item;
+        
+        row.innerHTML = `
+            <td class="p-1" title="${item}">${truncatedItem}</td>
+            <td class="p-1 text-right">₹${cost.toFixed(0)}</td>
+        `;
+        table.appendChild(row);
+    }
+
+    // --- Event Handlers ---
+    async function handleFormSubmit(e, category) {
+        e.preventDefault();
+        const itemInput = elements[category].itemInput;
+        const costInput = elements[category].costInput || elements[category].amountInput;
+        
+        const item = itemInput.value.trim();
+        const amount = parseFloat(costInput.value);
+
+        if (item && amount > 0) {
+            try {
+                await addEntry(category, item, amount);
+                addEntryToTable(elements[category].table, item, amount);
+                updateUI();
+                itemInput.value = '';
+                costInput.value = '';
+            } catch (error) {
+                // Error already handled in addEntry
+            }
+        }
+    }
+
+    // --- Initialization ---
+    async function init() {
+        try {
+            // Fetch initial data
+            await fetchBudgetData();
+
+            // Init charts
+            charts.needs = createDoughnutChart(
+                document.getElementById('needsChart').getContext('2d'), 
+                getChartConfig(0, budgetData.categories.needs.total, '#3b82f6', '#bfdbfe'), 
+                chartOptions
+            );
+            charts.wants = createDoughnutChart(
+                document.getElementById('wantsChart').getContext('2d'), 
+                getChartConfig(0, budgetData.categories.wants.total, '#f97316', '#fed7aa'), 
+                chartOptions
+            );
+            charts.savings = createDoughnutChart(
+                document.getElementById('savingsChart').getContext('2d'), 
+                getSavingsChartConfig(0, budgetData.categories.savings.total, '#22c55e', '#bbf7d0'), 
+                chartOptions
+            );
+            charts.combined = createDoughnutChart(
+                document.getElementById('combinedChart').getContext('2d'), 
+                getCombinedChartConfig(), 
+                chartOptions
+            );
+
+            // Build initial UI
+            rebuildTables();
+            updateUI();
+
+            // Attach event listeners
+            elements.needs.form.addEventListener('submit', (e) => handleFormSubmit(e, 'needs'));
+            elements.wants.form.addEventListener('submit', (e) => handleFormSubmit(e, 'wants'));
+            elements.savings.form.addEventListener('submit', (e) => handleFormSubmit(e, 'savings'));
+
+        } catch (error) {
+            console.error('Initialization failed:', error);
+        }
+    }
+
+    init();
+});
+</script>
+
+</body>
+</html>
