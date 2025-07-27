@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bajath Tracker</title>
+    <title>Budget Tracker - Personal Finance Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@
             font-weight: 600;
         }
         .table-container {
-            max-height: 100px;
+            max-height: 200px;
             overflow-y: auto;
         }
         .status-indicator {
@@ -50,7 +50,7 @@
             }
             
             input, button {
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
             }
             
             .category-card {
@@ -91,6 +91,14 @@
                 max-height: 200px;
             }
         }
+
+        .edit-form {
+            display: none;
+        }
+        
+        .edit-form.active {
+            display: flex;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -98,25 +106,166 @@
     <!-- Status Indicator -->
     <div id="status-indicator" class="status-indicator"></div>
 
-    <div class="container mx-auto p-3 max-w-6xl">
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div class="mb-4">
+                <h2 id="auth-title" class="text-2xl font-bold text-center">Welcome to Budget Tracker</h2>
+                <p class="text-gray-600 text-center mt-2">Sign in to manage your personal budget</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="login-email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="space-y-4 hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text" id="register-firstName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text" id="register-lastName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="register-email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="register-password" required minlength="6" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Monthly Income (₹)</label>
+                    <input type="number" id="register-income" step="0.01" min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700">Needs %</label>
+                        <input type="number" id="register-needs" value="50" min="0" max="100" class="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700">Wants %</label>
+                        <input type="number" id="register-wants" value="30" min="0" max="100" class="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700">Savings %</label>
+                        <input type="number" id="register-savings" value="20" min="0" max="100" class="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="mt-4 text-center">
+                <button id="toggle-auth" class="text-blue-600 hover:text-blue-800 text-sm">
+                    Don't have an account? Sign up
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="container mx-auto p-3 max-w-6xl hidden">
         <!-- Header -->
-        <header class="text-center mb-4">
-            <h1 class="text-2xl font-bold text-gray-900">Budget Tracker</h1>
-            <p id="last-updated" class="text-xs text-gray-500"></p>
+        <header class="flex justify-between items-center mb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Budget Tracker</h1>
+                <p id="user-welcome" class="text-sm text-gray-600"></p>
+            </div>
+            <div class="flex gap-2">
+                <button id="profile-btn" class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded">
+                    Profile
+                </button>
+                <button id="logout-btn" class="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded">
+                    Logout
+                </button>
+            </div>
         </header>
 
-        <!-- Summary Section - Compact -->
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-xl font-bold mb-4">Profile Settings</h3>
+                <form id="profile-form" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">First Name</label>
+                            <input type="text" id="profile-firstName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Last Name</label>
+                            <input type="text" id="profile-lastName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Monthly Income (₹)</label>
+                        <input type="number" id="profile-income" step="0.01" min="0" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700">Needs %</label>
+                            <input type="number" id="profile-needs" min="0" max="100" required class="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700">Wants %</label>
+                            <input type="number" id="profile-wants" min="0" max="100" required class="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700">Savings %</label>
+                            <input type="number" id="profile-savings" min="0" max="100" required class="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                            Update Profile
+                        </button>
+                        <button type="button" id="profile-cancel" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
         <div class="bg-white rounded-lg shadow-md p-3 mb-4">
             <div class="flex items-center justify-between">
                 <div class="summary-chart chart-container">
-                    <canvas id="combinedChart"></canvas>
+                    <canvas id="combined-chart"></canvas>
                     <div id="combinedChartLabel" class="chart-label"></div>
                 </div>
                 <div class="flex-1 ml-4 text-sm">
-                    <div class="grid grid-cols-1 gap-1">
-                        <p><strong>Income:</strong> <span id="totalIncome" class="text-green-600">₹18,000</span></p>
-                        <p><strong>Spent:</strong> <span id="totalSpent" class="text-red-600">₹0</span></p>
-                        <p><strong>Left:</strong> <span id="totalRemaining" class="text-blue-600">₹18,000</span></p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <p class="text-gray-500">Total Income</p>
+                            <p id="totalIncome" class="font-semibold text-lg">₹0</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Total Used</p>
+                            <p id="totalSpent" class="font-semibold text-lg">₹0</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Remaining</p>
+                            <p id="totalRemaining" class="font-semibold text-lg text-green-600">₹0</p>
+                        </div>
+                        <div>
+                            <p id="last-updated" class="text-xs text-gray-400"></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -128,32 +277,31 @@
             <!-- Needs -->
             <div class="bg-white rounded-lg shadow-md p-3 category-card">
                 <div class="text-center mb-3">
-                    <h3 class="text-lg font-bold text-blue-600">Needs</h3>
-                    <p class="text-xs text-gray-500">₹9,000 (50%)</p>
-                    <p class="text-sm"><span id="needsRemaining" class="font-semibold text-green-600">₹9,000</span> left</p>
-                </div>
-                
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="chart-container flex-shrink-0">
-                        <canvas id="needsChart"></canvas>
+                    <h3 class="font-semibold text-blue-600">Needs</h3>
+                    <div class="chart-container">
+                        <canvas id="needs-chart"></canvas>
                         <div id="needsChartLabel" class="chart-label"></div>
                     </div>
-                    <form id="needs-form" class="flex-1 space-y-2">
-                        <input type="text" id="needs-item" placeholder="Item" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-blue-500" required>
-                        <input type="number" id="needs-cost" placeholder="₹" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-blue-500" required min="0" step="0.01">
-                        <button type="submit" class="w-full bg-blue-600 text-white font-medium py-2 px-3 rounded text-sm hover:bg-blue-700">Add</button>
-                    </form>
+                    <p class="text-sm text-gray-500 mt-1">Remaining: <span id="needsRemaining" class="font-semibold">₹0</span></p>
                 </div>
                 
+                <form id="needs-form" class="flex items-center gap-2 mb-3">
+                    <input type="text" id="needs-item" placeholder="Item" required class="flex-1 text-sm px-2 py-1 border rounded">
+                    <input type="number" id="needs-cost" placeholder="₹" step="0.01" min="0.01" required class="w-16 text-sm px-2 py-1 border rounded">
+                    <button type="submit" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">+</button>
+                    <button type="button" id="needs-cancel" class="bg-gray-400 text-white px-2 py-1 text-xs rounded hover:bg-gray-500 hidden">✕</button>
+                </form>
+                
                 <div class="table-container">
-                    <table class="w-full text-left compact-table">
+                    <table class="w-full text-xs compact-table">
                         <thead>
-                            <tr class="border-b text-xs">
-                                <th class="p-1">Item</th>
-                                <th class="p-1 text-right">₹</th>
+                            <tr class="border-b">
+                                <th class="text-left p-1">Item</th>
+                                <th class="text-right p-1">Cost</th>
+                                <th class="text-right p-1">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="needs-table" class="text-xs">
+                        <tbody id="needs-table">
                         </tbody>
                     </table>
                 </div>
@@ -162,32 +310,31 @@
             <!-- Wants -->
             <div class="bg-white rounded-lg shadow-md p-3 category-card">
                 <div class="text-center mb-3">
-                    <h3 class="text-lg font-bold text-orange-600">Wants</h3>
-                    <p class="text-xs text-gray-500">₹5,400 (30%)</p>
-                    <p class="text-sm"><span id="wantsRemaining" class="font-semibold text-green-600">₹5,400</span> left</p>
-                </div>
-                
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="chart-container flex-shrink-0">
-                        <canvas id="wantsChart"></canvas>
+                    <h3 class="font-semibold text-orange-600">Wants</h3>
+                    <div class="chart-container">
+                        <canvas id="wants-chart"></canvas>
                         <div id="wantsChartLabel" class="chart-label"></div>
                     </div>
-                    <form id="wants-form" class="flex-1 space-y-2">
-                        <input type="text" id="wants-item" placeholder="Item" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-orange-500" required>
-                        <input type="number" id="wants-cost" placeholder="₹" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-orange-500" required min="0" step="0.01">
-                        <button type="submit" class="w-full bg-orange-500 text-white font-medium py-2 px-3 rounded text-sm hover:bg-orange-600">Add</button>
-                    </form>
+                    <p class="text-sm text-gray-500 mt-1">Remaining: <span id="wantsRemaining" class="font-semibold">₹0</span></p>
                 </div>
                 
+                <form id="wants-form" class="flex items-center gap-2 mb-3">
+                    <input type="text" id="wants-item" placeholder="Item" required class="flex-1 text-sm px-2 py-1 border rounded">
+                    <input type="number" id="wants-cost" placeholder="₹" step="0.01" min="0.01" required class="w-16 text-sm px-2 py-1 border rounded">
+                    <button type="submit" class="bg-orange-500 text-white px-3 py-1 text-sm rounded hover:bg-orange-600">+</button>
+                    <button type="button" id="wants-cancel" class="bg-gray-400 text-white px-2 py-1 text-xs rounded hover:bg-gray-500 hidden">✕</button>
+                </form>
+                
                 <div class="table-container">
-                    <table class="w-full text-left compact-table">
+                    <table class="w-full text-xs compact-table">
                         <thead>
-                            <tr class="border-b text-xs">
-                                <th class="p-1">Item</th>
-                                <th class="p-1 text-right">₹</th>
+                            <tr class="border-b">
+                                <th class="text-left p-1">Item</th>
+                                <th class="text-right p-1">Cost</th>
+                                <th class="text-right p-1">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="wants-table" class="text-xs">
+                        <tbody id="wants-table">
                         </tbody>
                     </table>
                 </div>
@@ -196,32 +343,31 @@
             <!-- Savings -->
             <div class="bg-white rounded-lg shadow-md p-3 category-card">
                 <div class="text-center mb-3">
-                    <h3 class="text-lg font-bold text-green-600">Savings</h3>
-                    <p class="text-xs text-gray-500">₹3,600 (20%)</p>
-                    <p class="text-sm"><span id="savingsRemaining" class="font-semibold text-green-600">₹3,600</span> to save</p>
-                </div>
-                
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="chart-container flex-shrink-0">
-                        <canvas id="savingsChart"></canvas>
+                    <h3 class="font-semibold text-green-600">Savings</h3>
+                    <div class="chart-container">
+                        <canvas id="savings-chart"></canvas>
                         <div id="savingsChartLabel" class="chart-label"></div>
                     </div>
-                    <form id="savings-form" class="flex-1 space-y-2">
-                        <input type="text" id="savings-item" placeholder="Source" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-green-500" required>
-                        <input type="number" id="savings-amount" placeholder="₹" class="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-green-500" required min="0" step="0.01">
-                        <button type="submit" class="w-full bg-green-600 text-white font-medium py-2 px-3 rounded text-sm hover:bg-green-700">Add</button>
-                    </form>
+                    <p class="text-sm text-gray-500 mt-1">To Save: <span id="savingsRemaining" class="font-semibold">₹0</span></p>
                 </div>
                 
+                <form id="savings-form" class="flex items-center gap-2 mb-3">
+                    <input type="text" id="savings-item" placeholder="Goal" required class="flex-1 text-sm px-2 py-1 border rounded">
+                    <input type="number" id="savings-amount" placeholder="₹" step="0.01" min="0.01" required class="w-16 text-sm px-2 py-1 border rounded">
+                    <button type="submit" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">+</button>
+                    <button type="button" id="savings-cancel" class="bg-gray-400 text-white px-2 py-1 text-xs rounded hover:bg-gray-500 hidden">✕</button>
+                </form>
+                
                 <div class="table-container">
-                    <table class="w-full text-left compact-table">
+                    <table class="w-full text-xs compact-table">
                         <thead>
-                            <tr class="border-b text-xs">
-                                <th class="p-1">Source</th>
-                                <th class="p-1 text-right">₹</th>
+                            <tr class="border-b">
+                                <th class="text-left p-1">Goal</th>
+                                <th class="text-right p-1">Amount</th>
+                                <th class="text-right p-1">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="savings-table" class="text-xs">
+                        <tbody id="savings-table">
                         </tbody>
                     </table>
                 </div>
@@ -230,323 +376,660 @@
     </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    let budgetData = null;
+class BudgetTrackerApp {
+    constructor() {
+        this.token = localStorage.getItem('authToken');
+        this.user = null;
+        this.budgetData = null;
+        this.charts = {};
+        this.isEditing = false;
+        this.editingEntryId = null;
+        this.editingCategory = null;
 
-    // DOM Elements
-    const elements = {
-        totalIncome: document.getElementById('totalIncome'),
-        totalSpent: document.getElementById('totalSpent'),
-        totalRemaining: document.getElementById('totalRemaining'),
-        lastUpdated: document.getElementById('last-updated'),
-        statusIndicator: document.getElementById('status-indicator'),
-        needs: {
-            form: document.getElementById('needs-form'),
-            itemInput: document.getElementById('needs-item'),
-            costInput: document.getElementById('needs-cost'),
-            table: document.getElementById('needs-table'),
-            remaining: document.getElementById('needsRemaining'),
-            chartLabel: document.getElementById('needsChartLabel')
-        },
-        wants: {
-            form: document.getElementById('wants-form'),
-            itemInput: document.getElementById('wants-item'),
-            costInput: document.getElementById('wants-cost'),
-            table: document.getElementById('wants-table'),
-            remaining: document.getElementById('wantsRemaining'),
-            chartLabel: document.getElementById('wantsChartLabel')
-        },
-        savings: {
-            form: document.getElementById('savings-form'),
-            itemInput: document.getElementById('savings-item'),
-            amountInput: document.getElementById('savings-amount'),
-            table: document.getElementById('savings-table'),
-            remaining: document.getElementById('savingsRemaining'),
-            chartLabel: document.getElementById('savingsChartLabel')
-        },
-        combined: {
-            chartLabel: document.getElementById('combinedChartLabel')
+        this.initializeElements();
+        this.attachEventListeners();
+        this.checkAuthentication();
+    }
+
+    initializeElements() {
+        // Auth elements
+        this.authModal = document.getElementById('auth-modal');
+        this.loginForm = document.getElementById('login-form');
+        this.registerForm = document.getElementById('register-form');
+        this.toggleAuthBtn = document.getElementById('toggle-auth');
+        this.appContainer = document.getElementById('app-container');
+
+        // Profile elements
+        this.profileModal = document.getElementById('profile-modal');
+        this.profileForm = document.getElementById('profile-form');
+        this.profileBtn = document.getElementById('profile-btn');
+        this.profileCancelBtn = document.getElementById('profile-cancel');
+
+        // UI elements
+        this.statusIndicator = document.getElementById('status-indicator');
+        this.userWelcome = document.getElementById('user-welcome');
+        this.logoutBtn = document.getElementById('logout-btn');
+
+        // Budget elements
+        this.elements = {
+            totalIncome: document.getElementById('totalIncome'),
+            totalSpent: document.getElementById('totalSpent'),
+            totalRemaining: document.getElementById('totalRemaining'),
+            lastUpdated: document.getElementById('last-updated'),
+            needs: {
+                form: document.getElementById('needs-form'),
+                itemInput: document.getElementById('needs-item'),
+                costInput: document.getElementById('needs-cost'),
+                table: document.getElementById('needs-table'),
+                remaining: document.getElementById('needsRemaining'),
+                chartLabel: document.getElementById('needsChartLabel'),
+                cancelBtn: document.getElementById('needs-cancel')
+            },
+            wants: {
+                form: document.getElementById('wants-form'),
+                itemInput: document.getElementById('wants-item'),
+                costInput: document.getElementById('wants-cost'),
+                table: document.getElementById('wants-table'),
+                remaining: document.getElementById('wantsRemaining'),
+                chartLabel: document.getElementById('wantsChartLabel'),
+                cancelBtn: document.getElementById('wants-cancel')
+            },
+            savings: {
+                form: document.getElementById('savings-form'),
+                itemInput: document.getElementById('savings-item'),
+                amountInput: document.getElementById('savings-amount'),
+                table: document.getElementById('savings-table'),
+                remaining: document.getElementById('savingsRemaining'),
+                chartLabel: document.getElementById('savingsChartLabel'),
+                cancelBtn: document.getElementById('savings-cancel')
+            },
+            combined: {
+                chartLabel: document.getElementById('combinedChartLabel')
+            }
+        };
+    }
+
+    attachEventListeners() {
+        // Auth event listeners
+        this.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        this.registerForm.addEventListener('submit', (e) => this.handleRegister(e));
+        this.toggleAuthBtn.addEventListener('click', () => this.toggleAuthMode());
+
+        // Profile event listeners
+        this.profileBtn.addEventListener('click', () => this.showProfileModal());
+        this.profileCancelBtn.addEventListener('click', () => this.hideProfileModal());
+        this.profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
+
+        // App event listeners
+        this.logoutBtn.addEventListener('click', () => this.logout());
+
+        // Budget form listeners
+        this.elements.needs.form.addEventListener('submit', (e) => this.handleFormSubmit(e, 'needs'));
+        this.elements.wants.form.addEventListener('submit', (e) => this.handleFormSubmit(e, 'wants'));
+        this.elements.savings.form.addEventListener('submit', (e) => this.handleFormSubmit(e, 'savings'));
+
+        // Cancel button listeners
+        this.elements.needs.cancelBtn.addEventListener('click', () => this.clearEditMode());
+        this.elements.wants.cancelBtn.addEventListener('click', () => this.clearEditMode());
+        this.elements.savings.cancelBtn.addEventListener('click', () => this.clearEditMode());
+
+        // Event delegation for edit and delete buttons
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn')) {
+                const id = e.target.getAttribute('data-id');
+                const category = e.target.getAttribute('data-category');
+                this.editEntry(parseInt(id), category);
+            } else if (e.target.classList.contains('delete-btn')) {
+                const id = e.target.getAttribute('data-id');
+                this.deleteEntry(parseInt(id));
+            }
+        });
+    }
+
+    async checkAuthentication() {
+        if (!this.token) {
+            this.showAuthModal();
+            return;
         }
-    };
 
-    // Chart instances
-    let charts = {};
-
-    // --- API Functions ---
-    async function fetchBudgetData() {
         try {
-            showStatus('Loading...', 'info');
-            const response = await fetch('/api/budget');
-            if (!response.ok) throw new Error('Failed to fetch budget data');
-            budgetData = await response.json();
-            showStatus('Loaded', 'success');
-            return budgetData;
+            const response = await this.apiCall('/api/auth/verify', 'GET');
+            if (response.valid) {
+                this.user = response.user;
+                this.showApp();
+                await this.loadBudgetData();
+            } else {
+                this.logout();
+            }
         } catch (error) {
-            showStatus('Error!', 'error');
-            alert('Error loading budget data: ' + error.message);
-            throw error;
+            console.error('Auth verification failed:', error);
+            this.logout();
         }
     }
 
-    async function addEntry(category, item, amount) {
-        try {
-            showStatus('Saving...', 'info');
-            const response = await fetch(`/api/budget/${category}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ item, amount })
-            });
-            
-            if (!response.ok) throw new Error('Failed to save entry');
-            const result = await response.json();
-            budgetData = result.data;
-            showStatus('Saved!', 'success');
-            return result;
-        } catch (error) {
-            showStatus('Failed!', 'error');
-            alert('Error saving entry: ' + error.message);
-            throw error;
+    async apiCall(endpoint, method = 'GET', data = null) {
+        const config = {
+            method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        if (this.token) {
+            config.headers.Authorization = `Bearer ${this.token}`;
         }
+
+        if (data) {
+            config.body = JSON.stringify(data);
+        }
+
+        console.log(`API Call: ${method} ${endpoint}`, data ? data : '');
+
+        const response = await fetch(endpoint, config);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            console.error(`API Error: ${method} ${endpoint}`, error);
+            throw new Error(error.error || 'Request failed');
+        }
+
+        const result = await response.json();
+        console.log(`API Response: ${method} ${endpoint}`, result);
+        return result;
     }
 
-    // --- UI Functions ---
-    function showStatus(message, type) {
+    showStatus(message, type) {
         const colors = {
             info: 'bg-blue-500',
             success: 'bg-green-500',
             error: 'bg-red-500'
         };
-        
-        elements.statusIndicator.innerHTML = `
+
+        this.statusIndicator.innerHTML = `
             <div class="px-3 py-1 rounded text-white text-xs ${colors[type]} shadow-lg">
                 ${message}
             </div>
         `;
-        
+
         if (type === 'success') {
             setTimeout(() => {
-                elements.statusIndicator.innerHTML = '';
-            }, 1500);
+                this.statusIndicator.innerHTML = '';
+            }, 2000);
         }
     }
 
-    // --- Chart Functions ---
-    function createDoughnutChart(ctx, data, options) {
-        return new Chart(ctx, {
+    async handleLogin(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            this.showStatus('Signing in...', 'info');
+            const response = await this.apiCall('/api/auth/login', 'POST', { email, password });
+            
+            this.token = response.token;
+            this.user = response.user;
+            localStorage.setItem('authToken', this.token);
+            
+            this.showStatus('Welcome back!', 'success');
+            this.showApp();
+            await this.loadBudgetData();
+        } catch (error) {
+            this.showStatus(error.message, 'error');
+        }
+    }
+
+    async handleRegister(e) {
+        e.preventDefault();
+
+        const formData = {
+            email: document.getElementById('register-email').value,
+            password: document.getElementById('register-password').value,
+            firstName: document.getElementById('register-firstName').value,
+            lastName: document.getElementById('register-lastName').value,
+            totalIncome: parseFloat(document.getElementById('register-income').value) || 0,
+            needsPercentage: parseInt(document.getElementById('register-needs').value),
+            wantsPercentage: parseInt(document.getElementById('register-wants').value),
+            savingsPercentage: parseInt(document.getElementById('register-savings').value)
+        };
+
+        if (formData.needsPercentage + formData.wantsPercentage + formData.savingsPercentage !== 100) {
+            this.showStatus('Percentages must add up to 100', 'error');
+            return;
+        }
+
+        try {
+            this.showStatus('Creating account...', 'info');
+            const response = await this.apiCall('/api/auth/register', 'POST', formData);
+            
+            this.token = response.token;
+            this.user = response.user;
+            localStorage.setItem('authToken', this.token);
+            
+            this.showStatus('Account created successfully!', 'success');
+            this.showApp();
+            await this.loadBudgetData();
+        } catch (error) {
+            this.showStatus(error.message, 'error');
+        }
+    }
+
+    toggleAuthMode() {
+        const isLogin = !this.loginForm.classList.contains('hidden');
+        
+        if (isLogin) {
+            this.loginForm.classList.add('hidden');
+            this.registerForm.classList.remove('hidden');
+            document.getElementById('auth-title').textContent = 'Create Account';
+            this.toggleAuthBtn.textContent = 'Already have an account? Sign in';
+        } else {
+            this.registerForm.classList.add('hidden');
+            this.loginForm.classList.remove('hidden');
+            document.getElementById('auth-title').textContent = 'Welcome Back';
+            this.toggleAuthBtn.textContent = "Don't have an account? Sign up";
+        }
+    }
+
+    showAuthModal() {
+        this.authModal.classList.remove('hidden');
+        this.appContainer.classList.add('hidden');
+    }
+
+    showApp() {
+        this.authModal.classList.add('hidden');
+        this.appContainer.classList.remove('hidden');
+        this.userWelcome.textContent = `Welcome, ${this.user.firstName}!`;
+    }
+
+    showProfileModal() {
+        document.getElementById('profile-firstName').value = this.user.firstName;
+        document.getElementById('profile-lastName').value = this.user.lastName;
+        document.getElementById('profile-income').value = this.user.totalIncome;
+        document.getElementById('profile-needs').value = this.user.needsPercentage;
+        document.getElementById('profile-wants').value = this.user.wantsPercentage;
+        document.getElementById('profile-savings').value = this.user.savingsPercentage;
+        this.profileModal.classList.remove('hidden');
+    }
+
+    hideProfileModal() {
+        this.profileModal.classList.add('hidden');
+    }
+
+    async handleProfileUpdate(e) {
+        e.preventDefault();
+
+        const formData = {
+            firstName: document.getElementById('profile-firstName').value,
+            lastName: document.getElementById('profile-lastName').value,
+            totalIncome: parseFloat(document.getElementById('profile-income').value),
+            needsPercentage: parseInt(document.getElementById('profile-needs').value),
+            wantsPercentage: parseInt(document.getElementById('profile-wants').value),
+            savingsPercentage: parseInt(document.getElementById('profile-savings').value)
+        };
+
+        if (formData.needsPercentage + formData.wantsPercentage + formData.savingsPercentage !== 100) {
+            this.showStatus('Percentages must add up to 100', 'error');
+            return;
+        }
+
+        try {
+            this.showStatus('Updating profile...', 'info');
+            const response = await this.apiCall('/api/auth/profile', 'PUT', formData);
+            
+            this.user = response.user;
+            this.userWelcome.textContent = `Welcome, ${this.user.firstName}!`;
+            this.hideProfileModal();
+            this.showStatus('Profile updated!', 'success');
+            await this.loadBudgetData();
+        } catch (error) {
+            this.showStatus(error.message, 'error');
+        }
+    }
+
+    logout() {
+        localStorage.removeItem('authToken');
+        this.token = null;
+        this.user = null;
+        this.budgetData = null;
+        this.showAuthModal();
+    }
+
+    async loadBudgetData() {
+        try {
+            this.showStatus('Loading budget...', 'info');
+            const response = await this.apiCall('/api/budget/summary');
+            this.budgetData = response;
+            
+            await this.loadEntries();
+            
+            // Only initialize charts if they don't exist yet
+            if (!this.charts.needs) {
+                this.initializeCharts();
+            }
+            
+            this.updateUI();
+            this.showStatus('Loaded!', 'success');
+        } catch (error) {
+            this.showStatus('Failed to load budget data', 'error');
+            console.error('loadBudgetData error:', error);
+        }
+    }
+
+    async loadEntries() {
+        try {
+            const response = await this.apiCall('/api/budget/entries?limit=10');
+            this.entries = response.entries;
+            this.rebuildTables();
+        } catch (error) {
+            console.error('Failed to load entries:', error);
+            this.showStatus('Failed to load entries', 'error');
+        }
+    }
+
+    initializeCharts() {
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            }
+        };
+
+        // Initialize charts
+        this.charts.needs = new Chart(document.getElementById('needs-chart'), {
             type: 'doughnut',
-            data: data,
-            options: options
+            data: this.getChartConfig(0, 100, '#3b82f6', '#bfdbfe'),
+            options: chartOptions
+        });
+
+        this.charts.wants = new Chart(document.getElementById('wants-chart'), {
+            type: 'doughnut',
+            data: this.getChartConfig(0, 100, '#f97316', '#fed7aa'),
+            options: chartOptions
+        });
+
+        this.charts.savings = new Chart(document.getElementById('savings-chart'), {
+            type: 'doughnut',
+            data: this.getSavingsChartConfig(0, 100, '#22c55e', '#bbf7d0'),
+            options: chartOptions
+        });
+
+        this.charts.combined = new Chart(document.getElementById('combined-chart'), {
+            type: 'doughnut',
+            data: this.getCombinedChartConfig(),
+            options: chartOptions
         });
     }
 
-    function getChartConfig(spent, total, color, lightColor) {
+    getChartConfig(spent, total, color, lightColor) {
         const remaining = total - spent;
         return {
             datasets: [{
-                data: [spent, remaining > 0 ? remaining : 0],
+                data: [spent, remaining],
                 backgroundColor: [color, lightColor],
-                borderColor: '#ffffff',
-                borderWidth: 2,
+                borderWidth: 0,
                 hoverBorderColor: '#ffffff'
             }],
             labels: ['Spent', 'Remaining']
         };
     }
-    
-    function getSavingsChartConfig(saved, total, color, lightColor) {
+
+    getSavingsChartConfig(saved, total, color, lightColor) {
         const remainingToSave = total - saved;
         return {
             datasets: [{
-                data: [saved, remainingToSave > 0 ? remainingToSave : 0],
+                data: [saved, remainingToSave],
                 backgroundColor: [color, lightColor],
-                borderColor: '#ffffff',
-                borderWidth: 2,
+                borderWidth: 0,
                 hoverBorderColor: '#ffffff'
             }],
             labels: ['Saved', 'Remaining to Save']
         };
     }
 
-    function getCombinedChartConfig() {
-        const totalSpent = budgetData.categories.needs.spent + budgetData.categories.wants.spent;
-        const totalSaved = budgetData.categories.savings.saved;
-        const totalRemaining = budgetData.totalIncome - totalSpent - totalSaved;
+    getCombinedChartConfig() {
+        if (!this.budgetData) return { datasets: [{ data: [1], backgroundColor: ['#e5e7eb'] }], labels: ['No Data'] };
+
+        const totalSpent = (this.budgetData.categories.needs?.spent || 0) + (this.budgetData.categories.wants?.spent || 0);
+        const totalSaved = this.budgetData.categories.savings?.saved || 0;
+        const totalRemaining = this.budgetData.totalIncome - totalSpent - totalSaved;
 
         return {
             datasets: [{
                 data: [
-                    budgetData.categories.needs.spent, 
-                    budgetData.categories.wants.spent, 
-                    totalSaved, 
-                    totalRemaining > 0 ? totalRemaining : 0
+                    this.budgetData.categories.needs?.spent || 0,
+                    this.budgetData.categories.wants?.spent || 0,
+                    totalSaved,
+                    Math.max(0, totalRemaining)
                 ],
                 backgroundColor: ['#3b82f6', '#f97316', '#22c55e', '#e5e7eb'],
-                borderColor: '#ffffff',
                 borderWidth: 2,
+                borderColor: '#ffffff'
             }],
             labels: ['Needs', 'Wants', 'Saved', 'Free']
         };
     }
 
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '60%',
-        plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false }
-        }
-    };
+    updateUI() {
+        if (!this.budgetData) return;
 
-    // --- Update Functions ---
-    function updateUI() {
-        if (!budgetData) return;
-
-        // Update last updated
-        if (budgetData.lastUpdated) {
-            elements.lastUpdated.textContent = `Updated: ${new Date(budgetData.lastUpdated).toLocaleString()}`;
-        }
-
-        // Update Needs
-        const needsRemaining = budgetData.categories.needs.total - budgetData.categories.needs.spent;
-        elements.needs.remaining.textContent = `₹${needsRemaining.toFixed(0)}`;
-        charts.needs.data = getChartConfig(budgetData.categories.needs.spent, budgetData.categories.needs.total, '#3b82f6', '#bfdbfe');
-        elements.needs.chartLabel.innerHTML = `${((needsRemaining / budgetData.categories.needs.total) * 100).toFixed(0)}%<br><small>left</small>`;
-        charts.needs.update();
-
-        // Update Wants
-        const wantsRemaining = budgetData.categories.wants.total - budgetData.categories.wants.spent;
-        elements.wants.remaining.textContent = `₹${wantsRemaining.toFixed(0)}`;
-        charts.wants.data = getChartConfig(budgetData.categories.wants.spent, budgetData.categories.wants.total, '#f97316', '#fed7aa');
-        elements.wants.chartLabel.innerHTML = `${((wantsRemaining / budgetData.categories.wants.total) * 100).toFixed(0)}%<br><small>left</small>`;
-        charts.wants.update();
+        // Update summary
+        this.elements.totalIncome.textContent = `₹${this.budgetData.totalIncome.toFixed(0)}`;
         
-        // Update Savings
-        const savingsRemaining = budgetData.categories.savings.total - budgetData.categories.savings.saved;
-        elements.savings.remaining.textContent = `₹${savingsRemaining.toFixed(0)}`;
-        charts.savings.data = getSavingsChartConfig(budgetData.categories.savings.saved, budgetData.categories.savings.total, '#22c55e', '#bbf7d0');
-        elements.savings.chartLabel.innerHTML = `${((budgetData.categories.savings.saved / budgetData.categories.savings.total) * 100).toFixed(0)}%<br><small>saved</small>`;
-        charts.savings.update();
+        const totalSpent = (this.budgetData.categories.needs?.spent || 0) + (this.budgetData.categories.wants?.spent || 0);
+        const totalUsed = totalSpent + (this.budgetData.categories.savings?.saved || 0);
+        const totalRemaining = this.budgetData.totalIncome - totalUsed;
+        
+        this.elements.totalSpent.textContent = `₹${totalUsed.toFixed(0)}`;
+        this.elements.totalRemaining.textContent = `₹${totalRemaining.toFixed(0)}`;
 
-        // Update Combined Summary
-        const totalSpent = budgetData.categories.needs.spent + budgetData.categories.wants.spent;
-        const totalRemaining = budgetData.totalIncome - totalSpent - budgetData.categories.savings.saved;
-        elements.totalIncome.textContent = `₹${budgetData.totalIncome.toFixed(0)}`;
-        elements.totalSpent.textContent = `₹${(totalSpent + budgetData.categories.savings.saved).toFixed(0)}`;
-        elements.totalRemaining.textContent = `₹${totalRemaining.toFixed(0)}`;
-        charts.combined.data = getCombinedChartConfig();
-        elements.combined.chartLabel.innerHTML = `${((totalRemaining / budgetData.totalIncome) * 100).toFixed(0)}%<br><small>free</small>`;
-        charts.combined.update();
+        // Update category charts and labels
+        ['needs', 'wants'].forEach(category => {
+            const data = this.budgetData.categories[category];
+            const remaining = data.total - data.spent;
+            const percentage = data.total > 0 ? (remaining / data.total * 100) : 100;
+            
+            this.elements[category].remaining.textContent = `₹${remaining.toFixed(0)}`;
+            this.elements[category].chartLabel.innerHTML = `${percentage.toFixed(0)}%<br><small>left</small>`;
+            this.charts[category].data = this.getChartConfig(data.spent, data.total, 
+                category === 'needs' ? '#3b82f6' : '#f97316',
+                category === 'needs' ? '#bfdbfe' : '#fed7aa'
+            );
+            this.charts[category].update();
+        });
+
+        // Update savings
+        const savingsData = this.budgetData.categories.savings;
+        const savingsRemaining = savingsData.total - savingsData.saved;
+        const savingsPercentage = savingsData.total > 0 ? (savingsData.saved / savingsData.total * 100) : 0;
+        
+        this.elements.savings.remaining.textContent = `₹${savingsRemaining.toFixed(0)}`;
+        this.elements.savings.chartLabel.innerHTML = `${savingsPercentage.toFixed(0)}%<br><small>saved</small>`;
+        this.charts.savings.data = this.getSavingsChartConfig(savingsData.saved, savingsData.total, '#22c55e', '#bbf7d0');
+        this.charts.savings.update();
+
+        // Update combined chart
+        this.charts.combined.data = this.getCombinedChartConfig();
+        const freePercentage = this.budgetData.totalIncome > 0 ? (totalRemaining / this.budgetData.totalIncome * 100) : 0;
+        this.elements.combined.chartLabel.innerHTML = `${Math.max(0, freePercentage).toFixed(0)}%<br><small>free</small>`;
+        this.charts.combined.update();
     }
 
-    function rebuildTables() {
-        if (!budgetData) return;
-
-        // Clear existing tables
-        elements.needs.table.innerHTML = '';
-        elements.wants.table.innerHTML = '';
-        elements.savings.table.innerHTML = '';
-        
-        // Rebuild needs entries (show only last 5)
-        const needsEntries = budgetData.categories.needs.entries.slice(-5);
-        needsEntries.forEach(entry => {
-            addEntryToTable(elements.needs.table, entry.item, entry.amount);
-        });
-        
-        // Rebuild wants entries (show only last 5)
-        const wantsEntries = budgetData.categories.wants.entries.slice(-5);
-        wantsEntries.forEach(entry => {
-            addEntryToTable(elements.wants.table, entry.item, entry.amount);
-        });
-        
-        // Rebuild savings entries (show only last 5)
-        const savingsEntries = budgetData.categories.savings.entries.slice(-5);
-        savingsEntries.forEach(entry => {
-            addEntryToTable(elements.savings.table, entry.item, entry.amount);
+    rebuildTables() {
+        ['needs', 'wants', 'savings'].forEach(category => {
+            const table = this.elements[category].table;
+            table.innerHTML = '';
+            
+            const categoryEntries = this.entries.filter(entry => entry.category === category).slice(0, 5);
+            categoryEntries.forEach(entry => {
+                this.addEntryToTable(table, entry, category);
+            });
         });
     }
 
-    function addEntryToTable(table, item, cost) {
+    addEntryToTable(table, entry, category) {
         const row = document.createElement('tr');
         row.className = 'border-b last:border-b-0';
         
-        // Truncate long item names
-        const truncatedItem = item.length > 15 ? item.substring(0, 15) + '...' : item;
+        const truncatedItem = entry.item.length > 12 ? entry.item.substring(0, 12) + '...' : entry.item;
         
         row.innerHTML = `
-            <td class="p-1" title="${item}">${truncatedItem}</td>
-            <td class="p-1 text-right">₹${cost.toFixed(0)}</td>
+            <td class="p-1" title="${entry.item}">${truncatedItem}</td>
+            <td class="p-1 text-right">₹${parseFloat(entry.amount).toFixed(0)}</td>
+            <td class="p-1 text-right">
+                <button class="edit-btn text-blue-500 hover:text-blue-700 text-xs mr-1" data-id="${entry.id}" data-category="${category}">Edit</button>
+                <button class="delete-btn text-red-500 hover:text-red-700 text-xs" data-id="${entry.id}">Del</button>
+            </td>
         `;
         table.appendChild(row);
     }
 
-    // --- Event Handlers ---
-    async function handleFormSubmit(e, category) {
+    async handleFormSubmit(e, category) {
         e.preventDefault();
-        const itemInput = elements[category].itemInput;
-        const costInput = elements[category].costInput || elements[category].amountInput;
+        
+        const itemInput = this.elements[category].itemInput;
+        const costInput = this.elements[category].costInput || this.elements[category].amountInput;
         
         const item = itemInput.value.trim();
         const amount = parseFloat(costInput.value);
 
-        if (item && amount > 0) {
-            try {
-                await addEntry(category, item, amount);
-                addEntryToTable(elements[category].table, item, amount);
-                updateUI();
+        if (!item || amount <= 0) {
+            this.showStatus('Please enter valid item name and amount', 'error');
+            return;
+        }
+
+        try {
+            if (this.isEditing) {
+                // Make sure we're editing in the correct category
+                if (this.editingCategory !== category) {
+                    this.showStatus('Cannot change category while editing', 'error');
+                    return;
+                }
+                
+                this.showStatus('Updating entry...', 'info');
+                const response = await this.apiCall(`/api/budget/entries/${this.editingEntryId}`, 'PUT', { item, amount });
+                console.log('Update response:', response);
+                
+                // Update budget data from response
+                if (response.summary) {
+                    this.budgetData = response.summary;
+                }
+                
+                this.clearEditMode();
+                this.showStatus('Entry updated!', 'success');
+            } else {
+                this.showStatus('Adding entry...', 'info');
+                const response = await this.apiCall(`/api/budget/entries/${category}`, 'POST', { item, amount });
+                console.log('Add response:', response);
+                
+                // Update budget data from response
+                if (response.summary) {
+                    this.budgetData = response.summary;
+                }
+                
+                this.showStatus('Entry added!', 'success');
+                
+                // Clear form for new entries
                 itemInput.value = '';
                 costInput.value = '';
-            } catch (error) {
-                // Error already handled in addEntry
             }
-        }
-    }
-
-    // --- Initialization ---
-    async function init() {
-        try {
-            // Fetch initial data
-            await fetchBudgetData();
-
-            // Init charts
-            charts.needs = createDoughnutChart(
-                document.getElementById('needsChart').getContext('2d'), 
-                getChartConfig(0, budgetData.categories.needs.total, '#3b82f6', '#bfdbfe'), 
-                chartOptions
-            );
-            charts.wants = createDoughnutChart(
-                document.getElementById('wantsChart').getContext('2d'), 
-                getChartConfig(0, budgetData.categories.wants.total, '#f97316', '#fed7aa'), 
-                chartOptions
-            );
-            charts.savings = createDoughnutChart(
-                document.getElementById('savingsChart').getContext('2d'), 
-                getSavingsChartConfig(0, budgetData.categories.savings.total, '#22c55e', '#bbf7d0'), 
-                chartOptions
-            );
-            charts.combined = createDoughnutChart(
-                document.getElementById('combinedChart').getContext('2d'), 
-                getCombinedChartConfig(), 
-                chartOptions
-            );
-
-            // Build initial UI
-            rebuildTables();
-            updateUI();
-
-            // Attach event listeners
-            elements.needs.form.addEventListener('submit', (e) => handleFormSubmit(e, 'needs'));
-            elements.wants.form.addEventListener('submit', (e) => handleFormSubmit(e, 'wants'));
-            elements.savings.form.addEventListener('submit', (e) => handleFormSubmit(e, 'savings'));
-
+            
+            // Reload entries and update UI
+            await this.loadEntries();
+            this.updateUI();
         } catch (error) {
-            console.error('Initialization failed:', error);
+            console.error('Form submit error:', error);
+            this.showStatus(error.message, 'error');
         }
     }
 
-    init();
+    async editEntry(id, category) {
+        try {
+            const entry = this.entries.find(e => e.id === id);
+            if (!entry) {
+                this.showStatus('Entry not found', 'error');
+                return;
+            }
+
+            // Clear any previous editing state
+            this.clearEditMode();
+
+            // Populate form with entry data
+            this.elements[category].itemInput.value = entry.item;
+            const costInput = this.elements[category].costInput || this.elements[category].amountInput;
+            costInput.value = entry.amount;
+            
+            // Set editing state
+            this.isEditing = true;
+            this.editingEntryId = id;
+            this.editingCategory = category;
+            
+            // Visual feedback
+            this.elements[category].itemInput.style.backgroundColor = '#fef3c7';
+            costInput.style.backgroundColor = '#fef3c7';
+            
+            // Show cancel button
+            this.elements[category].cancelBtn.classList.remove('hidden');
+            
+            this.showStatus('Edit mode: Modify the values and submit', 'info');
+        } catch (error) {
+            console.error('Edit error:', error);
+            this.showStatus('Error loading entry for edit', 'error');
+        }
+    }
+
+    clearEditMode() {
+        if (this.isEditing && this.editingCategory) {
+            // Clear visual feedback
+            this.elements[this.editingCategory].itemInput.style.backgroundColor = '';
+            const costInput = this.elements[this.editingCategory].costInput || this.elements[this.editingCategory].amountInput;
+            costInput.style.backgroundColor = '';
+            
+            // Hide cancel button
+            this.elements[this.editingCategory].cancelBtn.classList.add('hidden');
+            
+            // Clear form
+            this.elements[this.editingCategory].itemInput.value = '';
+            costInput.value = '';
+        }
+        
+        this.isEditing = false;
+        this.editingEntryId = null;
+        this.editingCategory = null;
+    }
+
+    async deleteEntry(id) {
+        if (!confirm('Are you sure you want to delete this entry?')) return;
+
+        try {
+            this.showStatus('Deleting entry...', 'info');
+            const response = await this.apiCall(`/api/budget/entries/${id}`, 'DELETE');
+            console.log('Delete response:', response);
+            
+            // Update budget data from response
+            if (response.summary) {
+                this.budgetData = response.summary;
+            }
+            
+            this.showStatus('Entry deleted!', 'success');
+            
+            // Reload entries and update UI
+            await this.loadEntries();
+            this.updateUI();
+        } catch (error) {
+            console.error('Delete error:', error);
+            this.showStatus(error.message, 'error');
+        }
+    }
+}
+
+// Initialize the app
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+    app = new BudgetTrackerApp();
 });
 </script>
 
